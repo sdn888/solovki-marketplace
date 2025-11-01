@@ -1,131 +1,254 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Маршруты по Соловкам</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Соловки - Туристические маршруты</title>
     <style>
-        .route-card {
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin: 15px 0;
-            border-radius: 8px;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        :root {
+            --sea-deep: #2C3E50;
+            --sea-dark: #34495E;
+            --cloud: #ECF0F1;
+            --stone: #BDC3C7;
+            --aurora: #1ABC9C;
+            --sunset: #E74C3C;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
         }
-        .theme-badge {
-            background: #007bff;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 10px;
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-        .route-meta {
-            color: #666;
-            font-size: 14px;
-            margin: 10px 0;
-        }
-        .route-description {
-            margin: 15px 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--cloud);
+            color: var(--text-dark);
             line-height: 1.6;
         }
-        .route-image {
-            max-width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 6px;
-            margin: 10px 0;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
-        .btn-primary {
-            background: #007bff;
+
+        /* Header */
+        .header {
+            background: var(--sea-deep);
             color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 4px;
-            display: inline-block;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
         }
-        .tips-section {
-            background: #e7f3ff;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--stone);
+            font-size: 1.1rem;
+        }
+
+        /* Route Cards */
+        .route-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .route-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .route-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+
+        .route-image {
+            height: 200px;
+            background: linear-gradient(135deg, var(--sea-dark), var(--sea-deep));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .route-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="%231ABC9C" opacity="0.1" d="M0 0h100v100H0z"/></svg>');
+        }
+
+        .route-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--aurora);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .route-content {
+            padding: 1.5rem;
+        }
+
+        .route-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--sea-deep);
+        }
+
+        .route-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .route-description {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--sea-deep);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: var(--sea-dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--sea-deep);
+            color: var(--sea-deep);
+        }
+
+        .btn-outline:hover {
+            background: var(--sea-deep);
+            color: white;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--sea-deep);
+            color: var(--stone);
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
         }
     </style>
 </head>
 <body>
-    <h1>🏝️ Туристические маршруты по Соловецким островам</h1>
-
-    {% for route in routes %}
-    <div class="route-card">
-        <h2>{{ route.title }} <span class="theme-badge">{{ route.get_theme_display }}</span></h2>
-
-        <div class="route-meta">
-            <p><strong>⏱️ Длительность:</strong> {{ route.duration_hours }} часов</p>
-            <p><strong>🚶 Тип передвижения:</strong> {{ route.get_transport_type_display }}</p>
-            <p><strong>💵 Цена:</strong>
-                {% if route.price %}
-                    {{ route.price }} руб.
-                {% else %}
-                    <span style="color: #28a745;">Бесплатно</span>
-                {% endif %}
-            </p>
-            {% if route.need_food_supply %}
-            <p><strong>🍽️ Нужен запас еды</strong></p>
-            {% endif %}
-            <p><strong>👥 Максимум участников:</strong> {{ route.max_participants }} человек</p>
+    <header class="header">
+        <div class="container">
+            <h1>Соловецкие острова</h1>
+            <p>Туристические маршруты по историческим и природным достопримечательностям</p>
         </div>
+    </header>
 
-        <div class="route-description">
-            <h4>Описание маршрута:</h4>
-            <p>{{ route.description }}</p>
-        </div>
+    <main class="container">
+        {% if routes %}
+        <div class="route-grid">
+            {% for route in routes %}
+            <article class="route-card">
+                <div class="route-image">
+                    <span class="route-badge">{{ route.get_theme_display }}</span>
+                </div>
+                <div class="route-content">
+                    <h2 class="route-title">{{ route.title }}</h2>
 
-        {% if route.tips.all %}
-        <div class="tips-section">
-            <h4>💡 Советы по маршруту:</h4>
-            {% for tip in route.tips.all %}
-            <div style="margin: 10px 0;">
-                <strong>{{ tip.title }}</strong>
-                <p>{{ tip.description }}</p>
-            </div>
+                    <div class="route-meta">
+                        <div class="meta-item">
+                            ⏱ {{ route.duration_hours }}ч
+                        </div>
+                        <div class="meta-item">
+                            🚶 {{ route.get_transport_type_display }}
+                        </div>
+                        <div class="meta-item">
+                            💵 {% if route.price %}{{ route.price }}₽{% else %}Бесплатно{% endif %}
+                        </div>
+                        {% if route.need_food_supply %}
+                        <div class="meta-item">
+                            🍽 Нужна еда
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <p class="route-description">{{ route.description }}</p>
+
+                    {% if route.waypoints.all %}
+                    <div style="margin-bottom: 1rem;">
+                        <small style="color: var(--text-light);">
+                            📍 {{ route.waypoints.all|length }} точек маршрута
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <a href="{% url 'routes:route_detail' route.pk %}" class="btn">
+                        Исследовать маршрут
+                    </a>
+                </div>
+            </article>
             {% endfor %}
         </div>
-        {% endif %}
-
-        {% if route.waypoints.all %}
-        <div>
-            <h4>📍 Основные точки маршрута:</h4>
-            {% for waypoint in route.waypoints.all|slice:":3" %}
-            <div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-                <strong>{{ waypoint.order }}. {{ waypoint.name }}</strong>
-                <span style="font-size: 12px; color: #666;">({{ waypoint.get_waypoint_type_display }})</span>
-                {% if waypoint.short_description %}
-                <p style="margin: 5px 0 0 0; font-size: 14px;">{{ waypoint.short_description }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
-            {% if route.waypoints.all|length > 3 %}
-            <p style="color: #666; font-size: 14px;">... и еще {{ route.waypoints.all|length|add:"-3" }} точек</p>
-            {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <h2>Маршруты пока не добавлены</h2>
+            <p>Скоро здесь появятся увлекательные маршруты по Соловецким островам</p>
         </div>
         {% endif %}
+    </main>
 
-        <div style="margin-top: 20px;">
-            <a href="{% url 'routes:route_detail' route.pk %}" class="btn-primary">
-                📖 Подробнее о маршруте
-            </a>
+    <footer class="footer">
+        <div class="container">
+            <p>© 2024 Соловецкие острова. Все права защищены.</p>
         </div>
-    </div>
-    {% empty %}
-    <div class="route-card">
-        <p>Пока нет доступных маршрутов. Добавьте их через админ-панель.</p>
-    </div>
-    {% endfor %}
+    </footer>
 </body>
 </html>

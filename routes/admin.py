@@ -6,7 +6,7 @@ from .forms import RouteForm, WaypointForm
 
 class WaypointImageInline(admin.TabularInline):
     model = WaypointImage
-    extra = 1
+    extra = 3
     fields = ['image', 'caption', 'order', 'is_primary']
     ordering = ['order']
 
@@ -22,7 +22,7 @@ class WaypointInline(admin.TabularInline):
     model = Waypoint
     form = WaypointForm
     extra = 1
-    fields = ['order', 'name', 'waypoint_type', 'short_description', 'latitude', 'longitude']
+    fields = ['order', 'name', 'waypoint_type', 'latitude', 'longitude']
     ordering = ['order']
     show_change_link = True
 
@@ -43,7 +43,6 @@ class RouteAdmin(admin.ModelAdmin):
         }),
         ('Геоданные', {
             'fields': ('start_lat', 'start_lon', 'end_lat', 'end_lon'),
-            'classes': ('collapse',)
         }),
         ('Статус', {
             'fields': ('is_active',)
@@ -60,7 +59,6 @@ class WaypointAdmin(admin.ModelAdmin):
     ordering = ['route', 'order']
     inlines = [WaypointImageInline]
 
-    # Превью короткого описания в списке
     def short_description_preview(self, obj):
         if obj.short_description:
             return obj.short_description[:100] + "..." if len(obj.short_description) > 100 else obj.short_description
@@ -68,22 +66,22 @@ class WaypointAdmin(admin.ModelAdmin):
 
     short_description_preview.short_description = "Краткое описание"
 
+    # УБИРАЕМ classes: ('collapse',) чтобы все поля были видимы по умолчанию
     fieldsets = (
         ('Основная информация', {
             'fields': ('route', 'order', 'name', 'waypoint_type', 'short_description')
         }),
         ('Подробные описания', {
             'fields': ('detailed_description', 'history_info', 'architecture_info'),
-            'classes': ('collapse',)
+            'description': 'Здесь можно добавить полное описание достопримечательности'
         }),
         ('Особенности посещения', {
             'fields': ('visit_notes', 'path_description', 'best_time_to_visit', 'difficulty'),
-            'classes': ('collapse',)
+            'description': 'Информация о том, как добраться и что учесть при посещении'
         }),
         ('Практическая информация', {
             'fields': ('estimated_stay_minutes', 'has_food', 'has_toilets', 'has_parking',
                        'is_wheelchair_accessible', 'is_optional'),
-            'classes': ('collapse',)
         }),
         ('Геоданные', {
             'fields': ('latitude', 'longitude', 'altitude')
@@ -110,10 +108,3 @@ class WaypointImageAdmin(admin.ModelAdmin):
         return "-"
 
     image_preview.short_description = "Превью"
-
-
-@admin.register(RouteTip)
-class RouteTipAdmin(admin.ModelAdmin):
-    list_display = ['title', 'route', 'order']
-    list_filter = ['route']
-    ordering = ['route', 'order']
