@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Маршруты по Соловкам</title>
+    <style>
+        .route-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .theme-badge {
+            background: #007bff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .route-meta {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .route-description {
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+        .route-image {
+            max-width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .tips-section {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏝️ Туристические маршруты по Соловецким островам</h1>
+
+    {% for route in routes %}
+    <div class="route-card">
+        <h2>{{ route.title }} <span class="theme-badge">{{ route.get_theme_display }}</span></h2>
+
+        <div class="route-meta">
+            <p><strong>⏱️ Длительность:</strong> {{ route.duration_hours }} часов</p>
+            <p><strong>🚶 Тип передвижения:</strong> {{ route.get_transport_type_display }}</p>
+            <p><strong>💵 Цена:</strong>
+                {% if route.price %}
+                    {{ route.price }} руб.
+                {% else %}
+                    <span style="color: #28a745;">Бесплатно</span>
+                {% endif %}
+            </p>
+            {% if route.need_food_supply %}
+            <p><strong>🍽️ Нужен запас еды</strong></p>
+            {% endif %}
+            <p><strong>👥 Максимум участников:</strong> {{ route.max_participants }} человек</p>
+        </div>
+
+        <div class="route-description">
+            <h4>Описание маршрута:</h4>
+            <p>{{ route.description }}</p>
+        </div>
+
+        {% if route.tips.all %}
+        <div class="tips-section">
+            <h4>💡 Советы по маршруту:</h4>
+            {% for tip in route.tips.all %}
+            <div style="margin: 10px 0;">
+                <strong>{{ tip.title }}</strong>
+                <p>{{ tip.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if route.waypoints.all %}
+        <div>
+            <h4>📍 Основные точки маршрута:</h4>
+            {% for waypoint in route.waypoints.all|slice:":3" %}
+            <div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                <strong>{{ waypoint.order }}. {{ waypoint.name }}</strong>
+                <span style="font-size: 12px; color: #666;">({{ waypoint.get_waypoint_type_display }})</span>
+                {% if waypoint.short_description %}
+                <p style="margin: 5px 0 0 0; font-size: 14px;">{{ waypoint.short_description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if route.waypoints.all|length > 3 %}
+            <p style="color: #666; font-size: 14px;">... и еще {{ route.waypoints.all|length|add:"-3" }} точек</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 20px;">
+            <a href="{% url 'routes:route_detail' route.pk %}" class="btn-primary">
+                📖 Подробнее о маршруте
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="route-card">
+        <p>Пока нет доступных маршрутов. Добавьте их через админ-панель.</p>
+    </div>
+    {% endfor %}
+</body>
+</html>
