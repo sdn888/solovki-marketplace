@@ -6,6 +6,8 @@
     <title>{{ route.title }} - Соловки</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" />
+    <!-- Подключаем Leaflet PolylineDecorator для пунктирных линий -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.css" />
     <style>
         :root {
             --sea-deep: #2C3E50;
@@ -367,7 +369,7 @@
             }
         }
 
-        /* Стили для печати - ВОССТАНАВЛИВАЕМ */
+        /* Стили для печати */
         @media print {
             .no-print {
                 display: none !important;
@@ -686,6 +688,8 @@
     <!-- ПОДКЛЮЧАЕМ БИБЛИОТЕКИ -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox-plus-jquery.min.js"></script>
+    <!-- Подключаем плагин для пунктирных линий -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
 
     <script>
         // ФУНКЦИЯ ДЛЯ ИСПРАВЛЕНИЯ КООРДИНАТ
@@ -706,9 +710,50 @@
             });
         }
 
-        // ИНИЦИАЛИЗАЦИЯ КАРТЫ С НУМЕРОВАННЫМИ МАРКЕРАМИ
+        // ФУНКЦИЯ ДЛЯ СОЗДАНИЯ ПУНКТИРНОГО МАРШРУТА
+        function createDashedRoute(waypoints, map) {
+            if (waypoints.length < 2) return null;
+
+            // Сортируем точки по порядку
+            const sortedWaypoints = [...waypoints].sort((a, b) => a.order - b.order);
+
+            // Создаем массив координат для линии
+            const routeCoordinates = sortedWaypoints.map(wp => [wp.lat, wp.lon]);
+
+            // Создаем основную линию маршрута
+            const routeLine = L.polyline(routeCoordinates, {
+                color: '#1ABC9C',
+                weight: 3,
+                opacity: 0.8,
+                dashArray: '10, 10', // Пунктирный эффект
+                lineJoin: 'round'
+            }).addTo(map);
+
+            // Добавляем стрелки направления на линию
+            L.polylineDecorator(routeLine, {
+                patterns: [
+                    {
+                        offset: 0,
+                        repeat: 50,
+                        symbol: L.Symbol.dash({
+                            pixelSize: 8,
+                            pathOptions: {
+                                stroke: true,
+                                color: '#1ABC9C',
+                                opacity: 0.8,
+                                weight: 3
+                            }
+                        })
+                    }
+                ]
+            }).addTo(map);
+
+            return routeLine;
+        }
+
+        // ИНИЦИАЛИЗАЦИЯ КАРТЫ С НУМЕРОВАННЫМИ МАРКЕРАМИ И ПУНКТИРНЫМ МАРШРУТОМ
         function initializeMap() {
-            console.log('Инициализация карты с нумерованными маркерами...');
+            console.log('Инициализация карты с нумерованными маркерами и пунктирным маршрутом...');
 
             // Данные точек маршрута с исправленными координатами
             const waypointsData = [
@@ -788,13 +833,24 @@
                     markers.push(marker);
                 });
 
-                // Настраиваем видимость всех маркеров
-                if (markers.length > 0) {
-                    const group = L.featureGroup(markers);
+                // Создаем пунктирный маршрут между точками
+                let routeLine = null;
+                if (validWaypoints.length > 1) {
+                    routeLine = createDashedRoute(validWaypoints, map);
+                }
+
+                // Настраиваем видимость всех маркеров и линии
+                let features = markers;
+                if (routeLine) {
+                    features = features.concat([routeLine]);
+                }
+
+                if (features.length > 0) {
+                    const group = L.featureGroup(features);
                     map.fitBounds(group.getBounds().pad(0.1));
                 }
 
-                console.log('Карта успешно загружена с', validWaypoints.length, 'нумерованными точками');
+                console.log('Карта успешно загружена с', validWaypoints.length, 'точками и пунктирным маршрутом');
 
             } catch (error) {
                 console.error('Ошибка при создании карты:', error);

@@ -1,7 +1,12 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Route, Waypoint, WaypointImage, RouteTip
+from .models import Route, Waypoint, WaypointImage, RouteTip, RouteImage
 from .forms import RouteForm, WaypointForm
+
+class RouteImageInline(admin.TabularInline):
+    model = RouteImage
+    extra = 1
+    fields = ['image', 'caption', 'order', 'is_primary']
 
 
 class WaypointImageInline(admin.TabularInline):
@@ -33,7 +38,7 @@ class RouteAdmin(admin.ModelAdmin):
     list_display = ['title', 'theme', 'transport_type', 'duration_hours', 'price', 'is_active']
     list_filter = ['theme', 'transport_type', 'is_active']
     search_fields = ['title', 'description']
-    inlines = [WaypointInline, RouteTipInline]
+    inlines = [RouteImageInline, WaypointInline, RouteTipInline]  # ДОБАВЛЕН RouteImageInline
     fieldsets = (
         ('Основная информация', {
             'fields': ('title', 'description', 'theme', 'transport_type')
@@ -66,7 +71,6 @@ class WaypointAdmin(admin.ModelAdmin):
 
     short_description_preview.short_description = "Краткое описание"
 
-    # УБИРАЕМ classes: ('collapse',) чтобы все поля были видимы по умолчанию
     fieldsets = (
         ('Основная информация', {
             'fields': ('route', 'order', 'name', 'waypoint_type', 'short_description')
@@ -108,3 +112,31 @@ class WaypointImageAdmin(admin.ModelAdmin):
         return "-"
 
     image_preview.short_description = "Превью"
+
+
+@admin.register(RouteImage)
+class RouteImageAdmin(admin.ModelAdmin):
+    list_display = ['route', 'caption_preview', 'order', 'is_primary', 'image_preview']
+    list_filter = ['route', 'is_primary']
+    ordering = ['route', 'order']
+
+    def caption_preview(self, obj):
+        if obj.caption:
+            return obj.caption[:50] + "..." if len(obj.caption) > 50 else obj.caption
+        return "-"
+
+    caption_preview.short_description = "Подпись"
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="max-height: 50px; max-width: 50px;" />', obj.image.url)
+        return "-"
+
+    image_preview.short_description = "Превью"
+
+
+@admin.register(RouteTip)
+class RouteTipAdmin(admin.ModelAdmin):
+    list_display = ['route', 'title', 'order']
+    list_filter = ['route']
+    ordering = ['route', 'order']

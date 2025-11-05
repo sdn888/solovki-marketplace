@@ -48,6 +48,43 @@ class Route(models.Model):
     end_lat = models.FloatField(verbose_name="Широта финиша", null=True, blank=True)
     end_lon = models.FloatField(verbose_name="Долгота финиша", null=True, blank=True)
 
+    def get_gallery_images(self):
+        """
+        Возвращает первые 4 изображения маршрута или точек маршрута
+        """
+        images = []
+
+        # Сначала берем изображения самого маршрута
+        route_images = self.route_images.all()
+        if route_images:
+            for image in route_images[:4]:
+                images.append(image)
+        else:
+            # Если нет изображений маршрута, берем из точек маршрута
+            for waypoint in self.waypoints.all():
+                for image in waypoint.images.all()[:4 - len(images)]:
+                    images.append(image)
+                if len(images) >= 4:
+                    break
+
+        return images
+
+    @property
+    def has_parking(self):
+        """Есть ли парковка в точках маршрута"""
+        return self.waypoints.filter(has_parking=True).exists()
+
+    @property
+    def is_wheelchair_accessible(self):
+        """Доступен ли маршрут для инвалидных колясок"""
+        return self.waypoints.filter(is_wheelchair_accessible=True).exists()
+
+    @property
+    def is_popular(self):
+        """Популярный маршрут (можно настроить свою логику)"""
+        # Например, если у маршрута больше 3 точек или он исторический
+        return self.waypoints.count() > 3 or self.theme == 'historical'
+
     def __str__(self):
         return self.title
 
@@ -194,3 +231,29 @@ class RouteTip(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class RouteImage(models.Model):
+    route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name='route_images')
+    image = models.ImageField(
+        upload_to='routes/%Y/%m/%d/',
+        verbose_name="Изображение маршрута",
+        help_text="Рекомендуемый размер: 1200x800px"
+    )
+    caption = models.TextField(
+        verbose_name="Подпись к фото",
+        blank=True,
+        help_text="Описание фотографии для главной страницы"
+    )
+    order = models.IntegerField(default=0, verbose_name="Порядок отображения")
+    is_primary = models.BooleanField(default=False, verbose_name="Основное фото")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['route', 'order', 'is_primary']
+        verbose_name = "Изображение маршрута"
+        verbose_name_plural = "Изображения маршрутов"
+
+    def __str__(self):
+        return f"Фото маршрута: {self.route.title}"
