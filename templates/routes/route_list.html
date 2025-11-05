@@ -205,13 +205,13 @@
 
                     <div class="route-meta">
                         <div class="meta-item">
-                            ⏱ {{ route.duration_hours }}ч
+                            ⏱ {{ route.duration_hours }} ч
                         </div>
                         <div class="meta-item">
                             🚶 {{ route.get_transport_type_display }}
                         </div>
                         <div class="meta-item">
-                            💵 {% if route.price %}{{ route.price }}₽{% else %}Бесплатно{% endif %}
+                            💵 {% if route.price %}{{ route.price }}₽{% else %}Цена не указана{% endif %}
                         </div>
                         {% if route.need_food_supply %}
                         <div class="meta-item">

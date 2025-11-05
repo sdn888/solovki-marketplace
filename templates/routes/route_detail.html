@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ route.title }} - Соловки</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css" />
     <style>
         :root {
             --sea-deep: #2C3E50;
@@ -16,6 +17,7 @@
             --text-dark: #2C3E50;
             --text-light: #7F8C8D;
             --border: #E1E8ED;
+            --base-font-size: 16px;
         }
 
         * {
@@ -24,17 +26,69 @@
             box-sizing: border-box;
         }
 
+        html {
+            font-size: var(--base-font-size);
+        }
+
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             background: var(--cloud);
             color: var(--text-dark);
             line-height: 1.6;
+            transition: font-size 0.3s ease;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
+        }
+
+        /* Controls - подняли выше и уменьшили еще */
+        .controls {
+            position: fixed;
+            top: 60px; /* Подняли на 1.5 см выше */
+            right: 15px;
+            background: white;
+            padding: 6px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: auto;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 3px;
+        }
+
+        .control-btn {
+            background: var(--sea-deep);
+            color: white;
+            border: none;
+            padding: 4px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background 0.3s ease;
+            min-width: 28px;
+        }
+
+        .control-btn:hover {
+            background: var(--sea-dark);
+        }
+
+        .print-btn {
+            background: var(--aurora);
+            font-size: 9px;
+            padding: 4px;
+        }
+
+        .print-btn:hover {
+            background: #16a085;
         }
 
         /* Header */
@@ -79,6 +133,11 @@
         .meta-label {
             font-size: 0.9rem;
             opacity: 0.8;
+        }
+
+        /* Добавляем пробел перед "ч" */
+        .duration::after {
+            content: " ч";
         }
 
         .back-link {
@@ -271,10 +330,121 @@
             .route-meta-header {
                 justify-content: flex-start;
             }
+
+            .controls {
+                position: static;
+                margin-bottom: 1rem;
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+
+        /* Стили для печати */
+        @media print {
+            .controls,
+            .back-link,
+            #map,
+            .btn {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 12pt !important;
+                line-height: 1.4 !important;
+            }
+
+            .header {
+                background: white !important;
+                color: black !important;
+                padding: 1rem 0 !important;
+                border-bottom: 2px solid #000 !important;
+            }
+
+            .card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                margin-bottom: 1rem !important;
+                break-inside: avoid;
+            }
+
+            .waypoint {
+                border-left: 3px solid #000 !important;
+                background: white !important;
+                margin: 1rem 0 !important;
+                break-inside: avoid;
+            }
+
+            .image-gallery {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 0.5rem !important;
+            }
+
+            .gallery-image {
+                height: 80px !important;
+                border: 1px solid #ddd !important;
+            }
+
+            .meta-card {
+                background: white !important;
+                color: black !important;
+                border: 1px solid #ddd !important;
+            }
+
+            .content-grid {
+                display: block !important;
+            }
+
+            .route-meta-header {
+                justify-content: space-between !important;
+            }
+
+            h1, h2, h3 {
+                color: black !important;
+            }
+
+            a {
+                color: black !important;
+                text-decoration: underline !important;
+            }
+        }
+
+        /* Размеры шрифтов - добавили xxsmall */
+        .font-xxsmall {
+            font-size: 12px;
+        }
+
+        .font-xsmall {
+            font-size: 14px;
+        }
+
+        .font-small {
+            font-size: 16px;
+        }
+
+        .font-medium {
+            font-size: 18px;
+        }
+
+        .font-large {
+            font-size: 20px;
         }
     </style>
 </head>
-<body>
+<body class="font-medium">
+    <!-- Панель управления - подняли выше и уменьшили -->
+    <div class="controls">
+        <div class="control-group">
+            <button class="control-btn" onclick="changeFontSize('xxsmall')" title="Очень маленький">A--</button>
+            <button class="control-btn" onclick="changeFontSize('xsmall')" title="Маленький">A-</button>
+            <button class="control-btn" onclick="changeFontSize('small')" title="Средний">A</button>
+            <button class="control-btn" onclick="changeFontSize('medium')" title="Большой">A+</button>
+            <button class="control-btn" onclick="changeFontSize('large')" title="Очень большой">A++</button>
+        </div>
+        <button class="control-btn print-btn" onclick="window.print()" title="Печать">🖨️</button>
+    </div>
+
     <header class="header">
         <div class="container">
             <a href="{% url 'home' %}" class="back-link">
@@ -289,7 +459,8 @@
 
                 <div class="route-meta-header">
                     <div class="meta-card">
-                        <div class="meta-value">{{ route.duration_hours }}ч</div>
+                        <!-- Добавляем класс duration для пробела перед "ч" -->
+                        <div class="meta-value duration">{{ route.duration_hours }}</div>
                         <div class="meta-label">Длительность</div>
                     </div>
                     <div class="meta-card">
@@ -297,7 +468,7 @@
                             {% if route.price %}
                                 {{ route.price }}₽
                             {% else %}
-                                Нет информации о цене
+                                Цена не указана
                             {% endif %}
                         </div>
                         <div class="meta-label">Стоимость</div>
@@ -316,7 +487,7 @@
             <div class="content-grid">
                 <!-- Left Column -->
                 <div>
-                    <!-- Map -->
+                    <!-- Map - ВОССТАНАВЛИВАЕМ КАРТУ -->
                     <div class="card">
                         <div class="card-header">
                             <span>🗺️</span>
@@ -344,6 +515,7 @@
                                 <span class="difficulty-{{ waypoint.difficulty }}">
                                     Сложность: {{ waypoint.get_difficulty_display }}
                                 </span>
+                                <!-- Добавляем пробел перед "мин" -->
                                 <span>⏱ {{ waypoint.estimated_stay_minutes }} мин</span>
                             </div>
 
@@ -401,10 +573,12 @@
                                 <div class="section-title">📸 Фотографии</div>
                                 <div class="image-gallery">
                                     {% for image in waypoint.images.all %}
-                                    <img src="{{ image.image.url }}"
-                                         alt="{{ image.caption|default:waypoint.name }}"
-                                         class="gallery-image"
-                                         title="{{ image.caption }}">
+                                    <a href="{{ image.image.url }}" data-lightbox="waypoint-{{ waypoint.id }}" data-title="{{ image.caption|default:waypoint.name }}">
+                                        <img src="{{ image.image.url }}"
+                                             alt="{{ image.caption|default:waypoint.name }}"
+                                             class="gallery-image"
+                                             title="{{ image.caption }}">
+                                    </a>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -468,73 +642,139 @@
         </div>
     </main>
 
+    <!-- Подключаем Lightbox2 для увеличения фото -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Initialize map
-        var map = L.map('map').setView([64.0345, 35.7105], 12);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Waypoints data
-        var waypoints = [
-            {% for waypoint in waypoints %}
-            {
-                name: "{{ waypoint.name|escapejs }}",
-                lat: {{ waypoint.latitude }},
-                lon: {{ waypoint.longitude }},
-                type: "{{ waypoint.waypoint_type }}",
-                description: "{{ waypoint.short_description|escapejs }}",
-                order: {{ waypoint.order }}
-            },
-            {% endfor %}
-        ];
-
-        // Marker colors
-        function getMarkerColor(type) {
-            var colors = {
-                'start': '#27AE60',
-                'end': '#E74C3C',
-                'attraction': '#2980B9',
-                'shrine': '#8E44AD',
-                'museum': '#D35400',
-                'skete': '#16A085',
-                'view': '#C0392B',
-                'food': '#F39C12',
-                'break': '#7F8C8D',
-                'info': '#3498DB'
-            };
-            return colors[type] || '#2980B9';
-        }
-
-        // Add markers to map
-        var markers = [];
-        waypoints.forEach(function(wp) {
-            if (wp.lat && wp.lon) {
-                var marker = L.marker([wp.lat, wp.lon], {
-                    icon: L.divIcon({
-                        className: 'waypoint-marker',
-                        html: '<div style="background-color: ' + getMarkerColor(wp.type) + '; border-radius: 50%; width: 30px; height: 30px; text-align: center; color: white; line-height: 30px; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-weight: 600;">' + wp.order + '</div>',
-                        iconSize: [30, 30]
-                    })
-                }).addTo(map);
-
-                marker.bindPopup(`
-                    <div style="min-width: 200px;">
-                        <strong>${wp.order}. ${wp.name}</strong><br>
-                        <small>${wp.description || ''}</small>
-                    </div>
-                `);
-                markers.push(marker);
-            }
+        // Настройка Lightbox с закрытием по крестику и Esc
+        lightbox.option({
+            'resizeDuration': 200,
+            'wrapAround': true,
+            'imageFadeDuration': 300,
+            'positionFromTop': 50,
+            'albumLabel': "Изображение %1 из %2",
+            'alwaysShowNavOnTouchDevices': true,
+            'showImageNumberLabel': true,
+            'fitImagesInViewport': true,
+            'maxWidth': 1200,
+            'maxHeight': 800
         });
 
-        // Fit map to show all markers
-        if (markers.length > 0) {
-            var group = new L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.1));
+        // Управление размером шрифта
+        function changeFontSize(size) {
+            document.body.className = '';
+            if (size !== 'medium') {
+                document.body.classList.add('font-' + size);
+            }
+
+            // Сохраняем настройку в localStorage
+            localStorage.setItem('preferredFontSize', size);
         }
+
+        // Восстанавливаем настройки шрифта при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedSize = localStorage.getItem('preferredFontSize');
+            if (savedSize) {
+                changeFontSize(savedSize);
+            }
+
+            // Инициализация карты после загрузки DOM
+            initializeMap();
+        });
+
+        // Функция инициализации карты
+        function initializeMap() {
+            // Проверяем, есть ли точки с координатами
+            var hasValidPoints = false;
+            var waypointsData = [
+                {% for waypoint in waypoints %}
+                {
+                    name: "{{ waypoint.name|escapejs }}",
+                    lat: {{ waypoint.latitude }},
+                    lon: {{ waypoint.longitude }},
+                    type: "{{ waypoint.waypoint_type }}",
+                    description: "{{ waypoint.short_description|escapejs }}",
+                    order: {{ waypoint.order }}
+                },
+                {% endfor %}
+            ];
+
+            // Фильтруем точки с валидными координатами
+            var validWaypoints = waypointsData.filter(function(wp) {
+                return wp.lat && wp.lon;
+            });
+
+            if (validWaypoints.length === 0) {
+                document.getElementById('map').innerHTML =
+                    '<div style="text-align: center; padding: 50px; color: #666;">' +
+                    'Для отображения карты добавьте координаты точек маршрута</div>';
+                return;
+            }
+
+            // Инициализация карты
+            var map = L.map('map').setView([64.0345, 35.7105], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Цвета маркеров в зависимости от типа точки
+            function getMarkerColor(type) {
+                var colors = {
+                    'start': '#27AE60',
+                    'end': '#E74C3C',
+                    'attraction': '#2980B9',
+                    'shrine': '#8E44AD',
+                    'museum': '#D35400',
+                    'skete': '#16A085',
+                    'view': '#C0392B',
+                    'food': '#F39C12',
+                    'break': '#7F8C8D',
+                    'info': '#3498DB'
+                };
+                return colors[type] || '#2980B9';
+            }
+
+            // Добавляем маркеры на карту
+            var markers = [];
+            validWaypoints.forEach(function(wp) {
+                if (wp.lat && wp.lon) {
+                    var marker = L.marker([wp.lat, wp.lon], {
+                        icon: L.divIcon({
+                            className: 'waypoint-marker',
+                            html: '<div style="background-color: ' + getMarkerColor(wp.type) + '; border-radius: 50%; width: 30px; height: 30px; text-align: center; color: white; line-height: 30px; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-weight: 600;">' + wp.order + '</div>',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(map);
+
+                    marker.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <strong>${wp.order}. ${wp.name}</strong><br>
+                            <small>${wp.description || ''}</small>
+                        </div>
+                    `);
+                    markers.push(marker);
+                    hasValidPoints = true;
+                }
+            });
+
+            // Если есть точки, приближаем карту чтобы показать все
+            if (markers.length > 0) {
+                var group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Добавляем обработчик Esc для закрытия lightbox
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                // Закрываем lightbox если он открыт
+                var lightbox = document.querySelector('.lightboxOverlay');
+                if (lightbox && lightbox.style.display !== 'none') {
+                    lightbox.click();
+                }
+            }
+        });
     </script>
 </body>
 </html>
