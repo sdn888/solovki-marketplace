@@ -1,243 +1,483 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>{{ route.title }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ route.title }} - Соловки</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
+        :root {
+            --sea-deep: #2C3E50;
+            --sea-dark: #34495E;
+            --cloud: #ECF0F1;
+            --stone: #BDC3C7;
+            --aurora: #1ABC9C;
+            --sunset: #E74C3C;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
+            --border: #E1E8ED;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--cloud);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background: #f8f9fa;
+            padding: 0 20px;
         }
-        .route-header {
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+        /* Header */
+        .header {
+            background: var(--sea-deep);
+            color: white;
+            padding: 2rem 0;
         }
-        .waypoint-card {
-            background: white;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
-        #map {
-            height: 500px;
-            background: #e9ecef;
-            border-radius: 8px;
-            margin: 20px 0;
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #007bff;
-            text-decoration: none;
-            padding: 8px 16px;
-            border: 1px solid #007bff;
-            border-radius: 4px;
-        }
-        .price-free {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .waypoint-image {
-            max-width: 100%;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 6px;
-            margin: 10px 0;
-        }
-        .image-gallery {
+
+        .route-meta-header {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin: 15px 0;
+            gap: 1.5rem;
+            margin: 1rem 0;
         }
-        .image-gallery img {
-            max-width: 200px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .section-title {
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 8px;
-            margin: 25px 0 15px 0;
-        }
-        .tip-card {
-            background: #e7f3ff;
-            padding: 15px;
+
+        .meta-card {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
             border-radius: 6px;
-            margin: 10px 0;
+            min-width: 150px;
         }
+
+        .meta-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .back-link {
+            color: var(--stone);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem 0;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            border-bottom: 2px solid var(--aurora);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--sea-deep);
+        }
+
+        /* Map */
+        #map {
+            height: 400px;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        /* Waypoints */
+        .waypoint {
+            border-left: 4px solid var(--aurora);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            background: var(--cloud);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .waypoint-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .waypoint-number {
+            background: var(--aurora);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .waypoint-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--sea-deep);
+            flex-grow: 1;
+        }
+
         .waypoint-meta {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-size: 14px;
+            display: flex;
+            gap: 1rem;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-light);
         }
-        .difficulty-easy { color: #28a745; }
-        .difficulty-moderate { color: #ffc107; }
-        .difficulty-hard { color: #dc3545; }
+
+        .waypoint-type {
+            background: var(--sea-dark);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .waypoint-section {
+            margin: 1rem 0;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: var(--sea-dark);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .waypoint-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Image Gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-image:hover {
+            transform: scale(1.05);
+        }
+
+        /* Tips */
+        .tip {
+            background: rgba(26, 188, 156, 0.1);
+            border-left: 3px solid var(--aurora);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .tip-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--sea-dark);
+        }
+
+        /* Difficulty badges */
+        .difficulty-easy { color: #27AE60; }
+        .difficulty-moderate { color: #F39C12; }
+        .difficulty-hard { color: #E74C3C; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+            }
+
+            .route-meta-header {
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
-    <a href="{% url 'home' %}" class="back-link">← Назад к списку маршрутов</a>
+    <header class="header">
+        <div class="container">
+            <a href="{% url 'home' %}" class="back-link">
+                ← Назад к маршрутам
+            </a>
 
-    <div class="route-header">
-        <h1>{{ route.title }}</h1>
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 15px 0;">
-            <div><strong>🎯 Тематика:</strong> {{ route.get_theme_display }}</div>
-            <div><strong>🚶 Тип передвижения:</strong> {{ route.get_transport_type_display }}</div>
-            <div><strong>⏱️ Длительность:</strong> {{ route.duration_hours }} часов</div>
-            <div><strong>💵 Цена:</strong>
-                {% if route.price %}
-                    {{ route.price }} руб.
-                {% else %}
-                    <span class="price-free">Бесплатно</span>
-                {% endif %}
+            <div class="header-content">
+                <div>
+                    <h1>{{ route.title }}</h1>
+                    <p style="color: var(--stone); margin-bottom: 1rem;">{{ route.description }}</p>
+                </div>
+
+                <div class="route-meta-header">
+                    <div class="meta-card">
+                        <div class="meta-value">{{ route.duration_hours }}ч</div>
+                        <div class="meta-label">Длительность</div>
+                    </div>
+                    <div class="meta-card">
+                        <div class="meta-value">
+                            {% if route.price %}
+                                {{ route.price }}₽
+                            {% else %}
+                                Нет информации о цене
+                            {% endif %}
+                        </div>
+                        <div class="meta-label">Стоимость</div>
+                    </div>
+                    <div class="meta-card">
+                        <div class="meta-value">{{ route.get_transport_type_display }}</div>
+                        <div class="meta-label">Тип</div>
+                    </div>
+                </div>
             </div>
         </div>
+    </header>
 
-        {% if route.need_food_supply %}
-        <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0;">
-            🍽️ <strong>Рекомендуется взять запас еды</strong>
-        </div>
-        {% endif %}
+    <main class="container">
+        <div class="main-content">
+            <div class="content-grid">
+                <!-- Left Column -->
+                <div>
+                    <!-- Map -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🗺️</span>
+                            <h2 class="card-title">Карта маршрута</h2>
+                        </div>
+                        <div id="map"></div>
+                    </div>
 
-        <div class="route-description">
-            <h3>Описание маршрута</h3>
-            <p style="line-height: 1.6;">{{ route.description }}</p>
-        </div>
-    </div>
+                    <!-- Waypoints -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>📍</span>
+                            <h2 class="card-title">Точки маршрута</h2>
+                        </div>
 
-    {% if route.tips.all %}
-    <div class="section-title">
-        <h2>💡 Советы по маршруту</h2>
-    </div>
-    {% for tip in route.tips.all %}
-    <div class="tip-card">
-        <h4>{{ tip.title }}</h4>
-        <p>{{ tip.description }}</p>
-    </div>
-    {% endfor %}
-    {% endif %}
+                        {% for waypoint in waypoints %}
+                        <div class="waypoint">
+                            <div class="waypoint-header">
+                                <div class="waypoint-number">{{ waypoint.order }}</div>
+                                <div class="waypoint-title">{{ waypoint.name }}</div>
+                                <div class="waypoint-type">{{ waypoint.get_waypoint_type_display }}</div>
+                            </div>
 
-    <div class="section-title">
-        <h2>🗺️ Карта маршрута</h2>
-    </div>
-    <div id="map"></div>
+                            <div class="waypoint-meta">
+                                <span class="difficulty-{{ waypoint.difficulty }}">
+                                    Сложность: {{ waypoint.get_difficulty_display }}
+                                </span>
+                                <span>⏱ {{ waypoint.estimated_stay_minutes }} мин</span>
+                            </div>
 
-    <div class="section-title">
-        <h2>📍 Точки маршрута</h2>
-    </div>
+                            {% if waypoint.short_description %}
+                            <div class="waypoint-section">
+                                <p>{{ waypoint.short_description }}</p>
+                            </div>
+                            {% endif %}
 
-    {% for waypoint in waypoints %}
-    <div class="waypoint-card">
-        <h3>{{ waypoint.order }}. {{ waypoint.name }}</h3>
-        <div class="waypoint-meta">
-            <span><strong>Тип:</strong> {{ waypoint.get_waypoint_type_display }}</span> •
-            <span><strong>Сложность:</strong>
-                <span class="difficulty-{{ waypoint.difficulty }}">{{ waypoint.get_difficulty_display }}</span>
-            </span> •
-            <span><strong>Время на посещение:</strong> {{ waypoint.estimated_stay_minutes }} мин.</span>
-            {% if waypoint.latitude and waypoint.longitude %}
-            • <span><strong>Координаты:</strong> {{ waypoint.latitude|floatformat:6 }}, {{ waypoint.longitude|floatformat:6 }}</span>
-            {% endif %}
-        </div>
+                            {% if waypoint.detailed_description %}
+                            <div class="waypoint-section">
+                                <div class="section-title">📖 Подробное описание</div>
+                                <p>{{ waypoint.detailed_description }}</p>
+                            </div>
+                            {% endif %}
 
-        {% if waypoint.short_description %}
-        <div style="margin: 15px 0;">
-            <h4>Краткое описание</h4>
-            <p>{{ waypoint.short_description }}</p>
-        </div>
-        {% endif %}
+                            {% if waypoint.history_info %}
+                            <div class="waypoint-section">
+                                <div class="section-title">📜 Историческая справка</div>
+                                <p>{{ waypoint.history_info }}</p>
+                            </div>
+                            {% endif %}
 
-        {% if waypoint.detailed_description %}
-        <div style="margin: 15px 0;">
-            <h4>Подробное описание</h4>
-            <p style="line-height: 1.6;">{{ waypoint.detailed_description }}</p>
-        </div>
-        {% endif %}
+                            {% if waypoint.visit_notes %}
+                            <div class="waypoint-section">
+                                <div class="section-title">🎯 Особенности посещения</div>
+                                <p>{{ waypoint.visit_notes }}</p>
+                            </div>
+                            {% endif %}
 
-        {% if waypoint.history_info %}
-        <div style="margin: 15px 0;">
-            <h4>📜 Историческая справка</h4>
-            <p style="line-height: 1.6;">{{ waypoint.history_info }}</p>
-        </div>
-        {% endif %}
+                            {% if waypoint.path_description %}
+                            <div class="waypoint-section">
+                                <div class="section-title">🛣️ Как добраться</div>
+                                <p>{{ waypoint.path_description }}</p>
+                            </div>
+                            {% endif %}
 
-        {% if waypoint.architecture_info %}
-        <div style="margin: 15px 0;">
-            <h4>🏛️ Архитектура и особенности</h4>
-            <p style="line-height: 1.6;">{{ waypoint.architecture_info }}</p>
-        </div>
-        {% endif %}
+                            <div class="waypoint-features">
+                                {% if waypoint.has_food %}
+                                <div class="feature">🍽️ Есть питание</div>
+                                {% endif %}
+                                {% if waypoint.has_toilets %}
+                                <div class="feature">🚻 Туалеты</div>
+                                {% endif %}
+                                {% if waypoint.has_parking %}
+                                <div class="feature">🅿️ Парковка</div>
+                                {% endif %}
+                                {% if waypoint.is_wheelchair_accessible %}
+                                <div class="feature">♿ Доступно</div>
+                                {% endif %}
+                            </div>
 
-        {% if waypoint.visit_notes %}
-        <div style="margin: 15px 0;">
-            <h4>🎯 Особенности посещения</h4>
-            <p style="line-height: 1.6;">{{ waypoint.visit_notes }}</p>
-        </div>
-        {% endif %}
+                            {% if waypoint.images.all %}
+                            <div class="waypoint-section">
+                                <div class="section-title">📸 Фотографии</div>
+                                <div class="image-gallery">
+                                    {% for image in waypoint.images.all %}
+                                    <img src="{{ image.image.url }}"
+                                         alt="{{ image.caption|default:waypoint.name }}"
+                                         class="gallery-image"
+                                         title="{{ image.caption }}">
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <p style="text-align: center; color: var(--text-light); padding: 2rem;">
+                            Точки маршрута пока не добавлены
+                        </p>
+                        {% endfor %}
+                    </div>
+                </div>
 
-        {% if waypoint.path_description %}
-        <div style="margin: 15px 0;">
-            <h4>🛣️ Описание пути</h4>
-            <p style="line-height: 1.6;">{{ waypoint.path_description }}</p>
-        </div>
-        {% endif %}
+                <!-- Right Column -->
+                <div>
+                    <!-- Route Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>ℹ️</span>
+                            <h2 class="card-title">О маршруте</h2>
+                        </div>
 
-        {% if waypoint.best_time_to_visit %}
-        <div style="margin: 15px 0;">
-            <h4>⏰ Лучшее время для посещения</h4>
-            <p style="line-height: 1.6;">{{ waypoint.best_time_to_visit }}</p>
-        </div>
-        {% endif %}
+                        <div style="display: grid; gap: 1rem;">
+                            <div>
+                                <strong>Тематика</strong>
+                                <p>{{ route.get_theme_display }}</p>
+                            </div>
 
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 15px 0;">
-            {% if waypoint.has_food %}<span>🍽️ Есть питание</span>{% endif %}
-            {% if waypoint.has_toilets %}<span>🚻 Есть туалеты</span>{% endif %}
-            {% if waypoint.has_parking %}<span>🅿️ Есть парковка</span>{% endif %}
-            {% if waypoint.is_wheelchair_accessible %}<span>♿ Доступно для инвалидов</span>{% endif %}
-            {% if waypoint.is_optional %}<span>🔹 Опциональная точка</span>{% endif %}
-        </div>
+                            <div>
+                                <strong>Участники</strong>
+                                <p>До {{ route.max_participants }} человек</p>
+                            </div>
 
-        {% if waypoint.images.all %}
-        <div>
-            <h4>📸 Фотографии</h4>
-            <div class="image-gallery">
-                {% for image in waypoint.images.all %}
-                <img src="{{ image.image.url }}"
-                     alt="{{ image.caption|default:waypoint.name }}"
-                     title="{{ image.caption }}">
-                {% endfor %}
+                            {% if route.need_food_supply %}
+                            <div style="background: #FFF3CD; padding: 0.75rem; border-radius: 4px;">
+                                <strong>🍽️ Важно</strong>
+                                <p style="margin: 0.25rem 0 0 0;">Рекомендуется взять запас еды</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Tips -->
+                    {% if tips %}
+                    <div class="card">
+                        <div class="card-header">
+                            <span>💡</span>
+                            <h2 class="card-title">Советы</h2>
+                        </div>
+
+                        {% for tip in tips %}
+                        <div class="tip">
+                            <div class="tip-title">{{ tip.title }}</div>
+                            <p>{{ tip.description }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        {% endif %}
-    </div>
-    {% empty %}
-    <div class="waypoint-card">
-        <p>Точки маршрута пока не добавлены.</p>
-    </div>
-    {% endfor %}
+    </main>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Инициализация карты
+        // Initialize map
         var map = L.map('map').setView([64.0345, 35.7105], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Данные о точках из Django
+        // Waypoints data
         var waypoints = [
             {% for waypoint in waypoints %}
             {
@@ -246,52 +486,51 @@
                 lon: {{ waypoint.longitude }},
                 type: "{{ waypoint.waypoint_type }}",
                 description: "{{ waypoint.short_description|escapejs }}",
-                order: {{ waypoint.order }},
-                difficulty: "{{ waypoint.difficulty }}"
+                order: {{ waypoint.order }}
             },
             {% endfor %}
         ];
 
-        // Цвета маркеров в зависимости от типа точки
+        // Marker colors
         function getMarkerColor(type) {
             var colors = {
-                'start': '#28a745',
-                'end': '#dc3545',
-                'attraction': '#007bff',
-                'shrine': '#6f42c1',
-                'museum': '#fd7e14',
-                'skete': '#20c997',
-                'view': '#e83e8c',
-                'food': '#ffc107',
-                'break': '#6c757d',
-                'info': '#17a2b8'
+                'start': '#27AE60',
+                'end': '#E74C3C',
+                'attraction': '#2980B9',
+                'shrine': '#8E44AD',
+                'museum': '#D35400',
+                'skete': '#16A085',
+                'view': '#C0392B',
+                'food': '#F39C12',
+                'break': '#7F8C8D',
+                'info': '#3498DB'
             };
-            return colors[type] || '#007bff';
+            return colors[type] || '#2980B9';
         }
 
-        // Добавляем маркеры на карту
+        // Add markers to map
         var markers = [];
         waypoints.forEach(function(wp) {
             if (wp.lat && wp.lon) {
                 var marker = L.marker([wp.lat, wp.lon], {
                     icon: L.divIcon({
                         className: 'waypoint-marker',
-                        html: '<div style="background-color: ' + getMarkerColor(wp.type) + '; border-radius: 50%; width: 25px; height: 25px; text-align: center; color: white; line-height: 25px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">' + wp.order + '</div>',
-                        iconSize: [25, 25]
+                        html: '<div style="background-color: ' + getMarkerColor(wp.type) + '; border-radius: 50%; width: 30px; height: 30px; text-align: center; color: white; line-height: 30px; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-weight: 600;">' + wp.order + '</div>',
+                        iconSize: [30, 30]
                     })
                 }).addTo(map);
 
                 marker.bindPopup(`
-                    <b>${wp.order}. ${wp.name}</b><br>
-                    <small>Тип: ${wp.type}</small><br>
-                    <small>Сложность: ${wp.difficulty}</small><br>
-                    ${wp.description ? '<br>' + wp.description : ''}
+                    <div style="min-width: 200px;">
+                        <strong>${wp.order}. ${wp.name}</strong><br>
+                        <small>${wp.description || ''}</small>
+                    </div>
                 `);
                 markers.push(marker);
             }
         });
 
-        // Если есть точки, приближаем карту чтобы показать все
+        // Fit map to show all markers
         if (markers.length > 0) {
             var group = new L.featureGroup(markers);
             map.fitBounds(group.getBounds().pad(0.1));
