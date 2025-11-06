@@ -558,6 +558,15 @@
                                 <div class="waypoint-number">{{ waypoint.order }}</div>
                                 <div class="waypoint-title">{{ waypoint.name }}</div>
                                 <div class="waypoint-type">{{ waypoint.get_waypoint_type_display }}</div>
+
+                                <!-- КНОПКА ИЗБРАННОГО -->
+                                {% if user.is_authenticated %}
+                                <button class="favorite-btn {% if waypoint in user.favorite_waypoints.all %}favorited{% endif %}"
+                                        data-waypoint-id="{{ waypoint.id }}"
+                                        onclick="toggleFavorite(this, {{ waypoint.id }})">
+                                    {% if waypoint in user.favorite_waypoints.all %}⭐ В избранном{% else %}☆ В избранное{% endif %}
+                                </button>
+                                {% endif %}
                             </div>
 
                             <div class="waypoint-meta">
@@ -895,6 +904,67 @@
             }
             localStorage.setItem('preferredFontSize', size);
         }
+
+        // Функция для добавления/удаления из избранного
+        function toggleFavorite(button, waypointId) {
+            if (!button.classList.contains('processing')) {
+                button.classList.add('processing');
+                button.disabled = true;
+
+                fetch(`/favorites/toggle/${waypointId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_favorite) {
+                        button.classList.add('favorited');
+                        button.innerHTML = '⭐ В избранном';
+                    } else {
+                        button.classList.remove('favorited');
+                        button.innerHTML = '☆ В избранное';
+                    }
+                })
+                .finally(() => {
+                    button.classList.remove('processing');
+                    button.disabled = false;
+                });
+            }
+        }
+
+        // Стили для кнопки избранного
+        const style = document.createElement('style');
+        style.textContent = `
+            .favorite-btn {
+                background: #f8f9fa;
+                border: 2px solid #dee2e6;
+                border-radius: 20px;
+                padding: 0.5rem 1rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-size: 0.9rem;
+            }
+
+            .favorite-btn:hover {
+                background: #e9ecef;
+                border-color: #adb5bd;
+            }
+
+            .favorite-btn.favorited {
+                background: #fff3cd;
+                border-color: #ffc107;
+                color: #856404;
+            }
+
+            .favorite-btn.processing {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

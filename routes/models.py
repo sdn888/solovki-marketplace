@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from django.contrib.auth.models import AbstractUser
 
 class Route(models.Model):
     THEME_CHOICES = [
@@ -257,3 +257,224 @@ class RouteImage(models.Model):
 
     def __str__(self):
         return f"Фото маршрута: {self.route.title}"
+
+
+class CustomUser(AbstractUser):
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('manager', 'Менеджер'),
+        ('admin', 'Администратор'),
+    ]
+
+    role = models.CharField(
+        max_length=10,
+        choices=ROLE_CHOICES,
+        default='user',
+        verbose_name="Роль"
+    )
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Телефон"
+    )
+    avatar = models.ImageField(
+        upload_to='avatars/',
+        blank=True,
+        null=True,
+        verbose_name="Аватар"
+    )
+
+    # ИЗБРАННЫЕ ТОЧКИ
+    favorite_waypoints = models.ManyToManyField(
+        'Waypoint',
+        through='FavoriteWaypoint',
+        related_name='favorited_by',
+        blank=True
+    )
+
+    def is_manager(self):
+        return self.role in ['manager', 'admin']
+
+    def is_admin(self):
+        return self.role == 'admin'
+
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+
+
+# МОДЕЛЬ ДЛЯ ИЗБРАННЫХ ТОЧЕК
+class FavoriteWaypoint(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    waypoint = models.ForeignKey('Waypoint', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, verbose_name="Заметки пользователя")
+    planned_visit_date = models.DateField(null=True, blank=True, verbose_name="Планируемая дата посещения")
+    priority = models.IntegerField(
+        default=1,
+        choices=[(1, 'Низкий'), (2, 'Средний'), (3, 'Высокий')],
+        verbose_name="Приоритет"
+    )
+
+
+
+    class Meta:
+        unique_together = ['user', 'waypoint']
+        verbose_name = "Избранная точка"
+        verbose_name_plural = "Избранные точки"
+        ordering = ['-priority', '-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.waypoint.name}"
+
+
+# МОДЕЛЬ ПЕРСОНАЛЬНОГО МАРШРУТА
+class PersonalRoute(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='personal_routes')
+    name = models.CharField(max_length=200, verbose_name="Название маршрута")
+    description = models.TextField(blank=True, verbose_name="Описание")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_public = models.BooleanField(default=False, verbose_name="Публичный маршрут")
+    color = models.CharField(max_length=7, default='#1ABC9C', verbose_name="Цвет маршрута")
+
+    class Meta:
+        verbose_name = "Персональный маршрут"
+        verbose_name_plural = "Персональные маршруты"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+    def get_total_duration(self):
+        """Общая длительность маршрута в часах"""
+        total_minutes = sum(point.estimated_stay_minutes for point in self.points.all())
+        return round(total_minutes / 60, 1)
+
+    def get_points_count(self):
+        return self.points.count()
+
+
+# ТОЧКИ В ПЕРСОНАЛЬНОМ МАРШРУТЕ
+class PersonalRoutePoint(models.Model):
+    personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='points')
+    waypoint = models.ForeignKey('Waypoint', on_delete=models.CASCADE)
+    order = models.IntegerField(verbose_name="Порядок в маршруте")
+    notes = models.TextField(blank=True, verbose_name="Заметки для точки")
+    planned_visit_time = models.IntegerField(default=60, verbose_name="Планируемое время посещения (мин)")
+
+    class Meta:
+        verbose_name = "Точка персонального маршрута"
+        verbose_name_plural = "Точки персональных маршрутов"
+        ordering = ['personal_route', 'order']
+        unique_together = ['personal_route', 'order']
+
+    def __str__(self):
+        return f"{self.personal_route.name} - {self.waypoint.name}"
+
+
+# МОДЕЛЬ ДЛЯ ОТЗЫВОВ И ЗАМЕТОК ПОСЕЩЕНИЯ
+class VisitNote(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    waypoint = models.ForeignKey('Waypoint', on_delete=models.CASCADE)
+    visited_date = models.DateField(verbose_name="Дата посещения")
+    rating = models.IntegerField(
+        choices=[(1, '1 - Ужасно'), (2, '2 - Плохо'), (3, '3 - Нормально'),
+                 (4, '4 - Хорошо'), (5, '5 - Отлично')],
+        verbose_name="Оценка"
+    )
+    notes = models.TextField(verbose_name="Заметки о посещении")
+    photos = models.ManyToManyField('WaypointImage', blank=True, verbose_name="Фотографии")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Заметка о посещении"
+        verbose_name_plural = "Заметки о посещениях"
+        ordering = ['-visited_date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.waypoint.name} ({self.visited_date})"
+
+# МОДЕЛИ ДЛЯ ЭКСПОРТА
+class ExportFormat(models.Model):
+    FORMAT_CHOICES = [
+        ('pdf', 'PDF'),
+        ('gpx', 'GPX'),
+        ('kml', 'KML'),
+    ]
+
+    name = models.CharField(max_length=50, verbose_name="Название формата")
+    format_type = models.CharField(max_length=10, choices=FORMAT_CHOICES)
+    is_active = models.BooleanField(default=True)
+
+
+class RouteExport(models.Model):
+    personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='exports')
+    export_format = models.ForeignKey(ExportFormat, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='exports/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    download_count = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Экспорт маршрута"
+        verbose_name_plural = "Экспорты маршрутов"
+
+
+class RouteSharing(models.Model):
+    PERMISSION_CHOICES = [
+        ('view', 'Только просмотр'),
+        ('comment', 'Просмотр и комментарии'),
+        ('edit', 'Полный доступ'),
+    ]
+
+    personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='sharings')
+    token = models.CharField(max_length=50, unique=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    permission = models.CharField(max_length=10, choices=PERMISSION_CHOICES, default='view')
+    is_active = models.BooleanField(default=True)
+    password = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Совместный доступ к маршруту"
+        verbose_name_plural = "Совместные доступы к маршрутам"
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            import secrets
+            self.token = secrets.token_urlsafe(25)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        if self.expires_at:
+            from django.utils import timezone
+            return timezone.now() > self.expires_at
+        return False
+
+
+class RouteCollaborator(models.Model):
+    personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='collaborators')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    permission = models.CharField(max_length=10, choices=RouteSharing.PERMISSION_CHOICES, default='view')
+    added_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='added_collaborators')
+
+    class Meta:
+        unique_together = ['personal_route', 'user']
+        verbose_name = "Соавтор маршрута"
+        verbose_name_plural = "Соавторы маршрутов"
+
+
+class RouteComment(models.Model):
+    personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    comment = models.TextField(verbose_name="Комментарий")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Комментарий к маршруту"
+        verbose_name_plural = "Комментарии к маршрутам"
+        ordering = ['-created_at']
+
