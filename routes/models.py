@@ -1,6 +1,9 @@
 from django.db import models
+from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Route(models.Model):
     THEME_CHOICES = [
@@ -259,53 +262,10 @@ class RouteImage(models.Model):
         return f"Фото маршрута: {self.route.title}"
 
 
-class CustomUser(AbstractUser):
-    ROLE_CHOICES = [
-        ('user', 'Пользователь'),
-        ('manager', 'Менеджер'),
-        ('admin', 'Администратор'),
-    ]
-
-    role = models.CharField(
-        max_length=10,
-        choices=ROLE_CHOICES,
-        default='user',
-        verbose_name="Роль"
-    )
-    phone = models.CharField(
-        max_length=20,
-        blank=True,
-        verbose_name="Телефон"
-    )
-    avatar = models.ImageField(
-        upload_to='avatars/',
-        blank=True,
-        null=True,
-        verbose_name="Аватар"
-    )
-
-    # ИЗБРАННЫЕ ТОЧКИ
-    favorite_waypoints = models.ManyToManyField(
-        'Waypoint',
-        through='FavoriteWaypoint',
-        related_name='favorited_by',
-        blank=True
-    )
-
-    def is_manager(self):
-        return self.role in ['manager', 'admin']
-
-    def is_admin(self):
-        return self.role == 'admin'
-
-    class Meta:
-        verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
-
 
 # МОДЕЛЬ ДЛЯ ИЗБРАННЫХ ТОЧЕК
 class FavoriteWaypoint(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     waypoint = models.ForeignKey('Waypoint', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True, verbose_name="Заметки пользователя")
@@ -330,7 +290,7 @@ class FavoriteWaypoint(models.Model):
 
 # МОДЕЛЬ ПЕРСОНАЛЬНОГО МАРШРУТА
 class PersonalRoute(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='personal_routes')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='personal_routes')
     name = models.CharField(max_length=200, verbose_name="Название маршрута")
     description = models.TextField(blank=True, verbose_name="Описание")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -375,7 +335,7 @@ class PersonalRoutePoint(models.Model):
 
 # МОДЕЛЬ ДЛЯ ОТЗЫВОВ И ЗАМЕТОК ПОСЕЩЕНИЯ
 class VisitNote(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     waypoint = models.ForeignKey('Waypoint', on_delete=models.CASCADE)
     visited_date = models.DateField(verbose_name="Дата посещения")
     rating = models.IntegerField(
@@ -429,7 +389,7 @@ class RouteSharing(models.Model):
 
     personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='sharings')
     token = models.CharField(max_length=50, unique=True)
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     permission = models.CharField(max_length=10, choices=PERMISSION_CHOICES, default='view')
@@ -455,10 +415,10 @@ class RouteSharing(models.Model):
 
 class RouteCollaborator(models.Model):
     personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='collaborators')
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     permission = models.CharField(max_length=10, choices=RouteSharing.PERMISSION_CHOICES, default='view')
     added_at = models.DateTimeField(auto_now_add=True)
-    added_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='added_collaborators')
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='added_collaborators')
 
     class Meta:
         unique_together = ['personal_route', 'user']
@@ -468,7 +428,7 @@ class RouteCollaborator(models.Model):
 
 class RouteComment(models.Model):
     personal_route = models.ForeignKey(PersonalRoute, on_delete=models.CASCADE, related_name='comments')
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField(verbose_name="Комментарий")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
