@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Соловки</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        :root {
+            --sea-deep: #2C3E50;
+            --sea-dark: #34495E;
+            --cloud: #ECF0F1;
+            --aurora: #1ABC9C;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--cloud);
+        }
+
+        .header {
+            background: var(--sea-deep);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .map-container {
+            height: calc(100vh - 80px);
+            position: relative;
+        }
+
+        #favorites-map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .map-sidebar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .favorite-count {
+            font-weight: bold;
+            color: var(--aurora);
+            margin-bottom: 0.5rem;
+        }
+
+        .waypoint-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .waypoint-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .waypoint-item:hover {
+            background: #f5f5f5;
+        }
+
+        .waypoint-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>{{ page_title }}</h1>
+        <div class="nav-links">
+            <a href="{% url 'favorite_waypoints_list' %}">📋 Список</a>
+            <a href="{% url 'home' %}">🏠 На главную</a>
+            <a href="{% url 'profile' %}">👤 Профиль</a>
+        </div>
+    </header>
+
+    <div class="map-container">
+        <div id="favorites-map"></div>
+
+        <div class="map-sidebar">
+            <div class="favorite-count">
+                📍 Избранных точек: {{ favorite_waypoints|length }}
+            </div>
+            {% if favorite_waypoints %}
+            <div class="waypoint-list">
+                {% for waypoint in favorite_waypoints %}
+                <div class="waypoint-item" data-lat="{{ waypoint.latitude }}" data-lon="{{ waypoint.longitude }}">
+                    <strong>{{ waypoint.name }}</strong>
+                    <br>
+                    <small>{{ waypoint.get_waypoint_type_display }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>У вас пока нет избранных точек</p>
+            <p><a href="{% url 'home' %}">Перейти к маршрутам →</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Инициализация карты
+        const map = L.map('favorites-map').setView([64.0345, 35.7105], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Функция для создания маркера
+        function createFavoriteMarker(waypoint) {
+            const marker = L.marker([waypoint.lat, waypoint.lon]).addTo(map);
+
+            marker.bindPopup(`
+                <div style="min-width: 200px;">
+                    <h3>${waypoint.name}</h3>
+                    <p><strong>Тип:</strong> ${waypoint.type}</p>
+                    <p>${waypoint.description || ''}</p>
+                    <p><small>Порядок в маршруте: ${waypoint.order}</small></p>
+                    <button onclick="removeFromFavorites(${waypoint.id})"
+                            style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                        ❌ Удалить из избранного
+                    </button>
+                </div>
+            `);
+
+            return marker;
+        }
+
+        // Данные избранных точек
+        const favoriteWaypoints = [
+            {% for waypoint in favorite_waypoints %}
+            {
+                id: {{ waypoint.id }},
+                name: "{{ waypoint.name|escapejs }}",
+                lat: {{ waypoint.latitude }},
+                lon: {{ waypoint.longitude }},
+                type: "{{ waypoint.get_waypoint_type_display|escapejs }}",
+                description: "{{ waypoint.short_description|escapejs }}",
+                order: {{ waypoint.order }}
+            },
+            {% endfor %}
+        ];
+
+        // Добавляем маркеры на карту
+        const markers = [];
+        favoriteWaypoints.forEach(waypoint => {
+            const marker = createFavoriteMarker(waypoint);
+            markers.push(marker);
+        });
+
+        // Настраиваем видимость всех маркеров
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        // Обработчики для боковой панели
+        document.querySelectorAll('.waypoint-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const lat = parseFloat(this.dataset.lat);
+                const lon = parseFloat(this.dataset.lon);
+                map.setView([lat, lon], 15);
+            });
+        });
+
+        // Функция удаления из избранного
+        function removeFromFavorites(waypointId) {
+            if (confirm('Удалить точку из избранного?')) {
+                fetch(`/favorites/toggle/${waypointId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'removed') {
+                        location.reload(); // Перезагружаем страницу для обновления данных
+                    }
+                });
+            }
+        }
+
+        // Функция для получения CSRF токена
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

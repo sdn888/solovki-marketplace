@@ -37,10 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     # Приложения проекта
-    'routes',
     'users',
+    'routes',
     'orders',
     'operators',
     'analytics',
@@ -136,3 +135,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Настройки для изображений
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
+
+AUTH_USER_MODEL = 'users.CustomUser'  # или 'users.CustomUser' если создадите отдельное приложение
+
+# Настройки аутентификации
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/login/'

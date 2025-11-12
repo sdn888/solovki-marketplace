@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Route, Waypoint, WaypointImage, RouteTip, RouteImage
+from .models import Route, Waypoint, WaypointImage, RouteTip, RouteImage, CustomUser
 from .forms import RouteForm, WaypointForm
+from django.contrib.auth.admin import UserAdmin
+
 
 class RouteImageInline(admin.TabularInline):
     model = RouteImage
@@ -140,3 +142,19 @@ class RouteTipAdmin(admin.ModelAdmin):
     list_display = ['route', 'title', 'order']
     list_filter = ['route']
     ordering = ['route', 'order']
+
+@admin.register(CustomUser)
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'email', 'role', 'first_name', 'last_name', 'is_staff')
+    list_filter = ('role', 'is_staff', 'is_superuser')
+    fieldsets = UserAdmin.fieldsets + (
+        ('Дополнительная информация', {
+            'fields': ('role', 'phone', 'avatar')
+        }),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('Дополнительная информация', {
+            'fields': ('role', 'phone', 'avatar')
+        }),
+    )
+
